@@ -15,7 +15,7 @@ struct process{
 
 #define MAX_PROCESSES 8
 #define STACK_SIZE 4096
-char process_stack[MAX_PROCESSES][STACK_SIZE];
+char process_stack[MAX_PROCESSES][STACK_SIZE]__attribute__((aligned(16)));
 struct process p_table[MAX_PROCESSES]={};
 
 void start_kernel(void)
