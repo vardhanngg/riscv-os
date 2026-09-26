@@ -8,8 +8,8 @@ CFLAGS = -mcmodel=medany -ffreestanding -nostdlib -g -Wall
 kernel: kernel.elf
 	$(OBJCOPY) -O binary kernel.elf kernel
 
-kernel.elf: start.o main.o uart.o
-	$(LD) -T link.ld -o kernel.elf start.o main.o uart.o
+kernel.elf: start.o main.o uart.o enter_umode.o
+	$(LD) -T link.ld -o kernel.elf start.o main.o uart.o enter_umode.o
 
 start.o: start.S
 	$(AS) start.S -o start.o
@@ -22,3 +22,5 @@ uart.o: uart.c
 
 clean:
 	rm -f *.o kernel kernel.elf
+enter_umode.o: enter_umode.S
+	$(AS) -o enter_umode.o enter_umode.S
