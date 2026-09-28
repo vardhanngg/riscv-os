@@ -2,7 +2,7 @@ extern void uart_putc(char c);
 extern char uart_getc(void);
 extern void uart_puts(const char *s);
 extern void uart_hex(unsigned long h);
-extern void enter_umode(unsigned long sp,unsigned long pc)__attribute__((noreturn));
+extern void enter_umode(unsigned long sp,unsigned long pc,unsigned long processaddress)__attribute__((noreturn));
 enum process_status{
     idle,
     ready,
@@ -20,19 +20,22 @@ struct process{
 #define STACK_SIZE 4096
 char process_stack[MAX_PROCESSES][STACK_SIZE]__attribute__((aligned(16)));
 struct process p_table[MAX_PROCESSES]={};
-void process_main(void){
+void process_main(struct process *p){
     uart_puts("in process main,trying to access sstatus.spp");
-    unsigned long sstatus;
-    asm("csrr %0,sstatus":"=r"(sstatus));
+    //unsigned long sstatus;
+    /*asm("csrr %0,sstatus":"=r"(sstatus));
     if((sstatus>>8)&1)
         uart_puts("in smode");
     else
         uart_puts("in umode");
-    
+    */
+    uart_puts("\rin process main HI FROM process and pid is ");
+    uart_hex(p->pid);
     asm volatile("ecall");
     uart_puts("\nfinished ecall");
-    while(1);
+    //while(1);
 }
+int current_running_process;
 void schedule(void){
     for(int i=0;i<MAX_PROCESSES;i=i+1){
         if(p_table[i].status==ready){
@@ -42,7 +45,8 @@ void schedule(void){
             //unsigned long pc=p_table[i].pc;
             //asm volatile("mv sp,%0"::"r"(sp));
             //asm volatile("csrw sepc,%0"::"r"(pc));
-            enter_umode(p_table[i].sp,p_table[i].pc);
+            current_running_process=i;
+            enter_umode(p_table[i].sp,p_table[i].pc,(unsigned long)&(p_table[i]));
         }
     }
 }
@@ -59,6 +63,9 @@ void trap_handler(void){
     asm volatile("csrr %0,scause":"=r"(scause));
     uart_puts("\n got the trap and scall is ");
     uart_hex(scause);
+    //enter_umode();
+    current_running_process++;
+    enter_umode(p_table[current_running_process].sp,p_table[current_running_process].pc,(unsigned long)&p_table[current_running_process]);
     while(1);
 }
 
@@ -71,10 +78,10 @@ void start_kernel(void)
         p_table[i].hart=0;
         p_table[i].sp=(unsigned long)&(process_stack[i][STACK_SIZE]);
         p_table[i].pc=(unsigned long)&process_main;
-        uart_hex(p_table[i].pid);uart_puts("\n");
-        uart_hex(p_table[i].sp);uart_puts("\n");
-        uart_hex(p_table[i].pc);uart_puts("\n");
-        uart_hex(p_table[i].pid);
+        //uart_hex(p_table[i].pid);uart_puts("\n");
+        //uart_hex(p_table[i].sp);uart_puts("\n");
+        //uart_hex(p_table[i].pc);uart_puts("\n");
+        //uart_hex(p_table[i].pid);
         
     }
 
@@ -103,7 +110,7 @@ void start_kernel(void)
     //asm volatile("csrw sepc,%0"::"r"(pm));
 
     p_table[0].status=ready;
-    //p_table[1].status=ready;
+    p_table[1].status=ready;
     schedule();
     while(1);
 }

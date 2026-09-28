@@ -4,4 +4,5 @@ enter_umode:
     csrw sepc,a1
     li t0,0b100000000
     csrc sstatus,t0
+    mv a0, a2
     sret

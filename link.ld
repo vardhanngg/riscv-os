@@ -2,7 +2,7 @@ OUTPUT_ARCH(riscv)
 ENTRY(_start)
 SECTIONS{
     /* for virt  0x80200000  ,  for the pi  0x40000000  */
-    . = 0x40000000;
+    . = 0x80200000;
     _start = .;
     .text :{
         *(.text.boot)*(.text)
