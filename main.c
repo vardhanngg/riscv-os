@@ -35,9 +35,9 @@ void process_main(struct process *p){
     uart_puts("\nfinished ecall");
     //while(1);
 }
-int current_running_process;
+int current_running_process=0;
 void schedule(void){
-    for(int i=0;i<MAX_PROCESSES;i=i+1){
+    for(int i=current_running_process;i<MAX_PROCESSES;i=i+1){
         if(p_table[i].status==ready){
             uart_puts("found a ready process with pid ");
             uart_hex(p_table[i].pid);
@@ -64,8 +64,11 @@ void trap_handler(void){
     uart_puts("\n got the trap and scall is ");
     uart_hex(scause);
     //enter_umode();
+    
+    //enter_umode(p_table[current_running_process].sp,p_table[current_running_process].pc,(unsigned long)&p_table[current_running_process]);
+    p_table[current_running_process].status=blocked;
     current_running_process++;
-    enter_umode(p_table[current_running_process].sp,p_table[current_running_process].pc,(unsigned long)&p_table[current_running_process]);
+    schedule();
     while(1);
 }
 
@@ -111,6 +114,9 @@ void start_kernel(void)
 
     p_table[0].status=ready;
     p_table[1].status=ready;
+    for(int i=0;i<MAX_PROCESSES;i=i+1){
+        p_table[i].status=ready;
+    }
     schedule();
     while(1);
 }
