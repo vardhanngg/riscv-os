@@ -8,12 +8,24 @@ enum process_status{
     ready,
     blocked
 };
+typedef struct trapframe{
+    unsigned long gp;
+    unsigned long tp;
+    unsigned long ra;
+    unsigned long sp;//at time of trap
+    unsigned long t0,t1,t2,t3,t4,t5,t6;
+    unsigned long s0,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11;
+    unsigned long a0,a1,a2,a3,a4,a5,a6,a7;
+    unsigned long sepc;
+    unsigned long sstatus;
+}trapframe;
 struct process{
     int pid;
     enum process_status status;
     int hart;
-    unsigned long sp;
+    unsigned long sp;//initial one
     unsigned long pc;
+    trapframe tf;
 };
 
 #define MAX_PROCESSES 8
@@ -21,7 +33,7 @@ struct process{
 char process_stack[MAX_PROCESSES][STACK_SIZE]__attribute__((aligned(16)));
 struct process p_table[MAX_PROCESSES]={};
 void process_main(struct process *p){
-    uart_puts("in process main,trying to access sstatus.spp");
+    //uart_puts("in process main,trying to access sstatus.spp");
     //unsigned long sstatus;
     /*asm("csrr %0,sstatus":"=r"(sstatus));
     if((sstatus>>8)&1)
@@ -29,7 +41,7 @@ void process_main(struct process *p){
     else
         uart_puts("in umode");
     */
-    uart_puts("\rin process main HI FROM process and pid is ");
+    uart_puts("\nin process main HI FROM process and pid is ");
     uart_hex(p->pid);
     asm volatile("ecall");
     uart_puts("\nfinished ecall");
@@ -104,9 +116,10 @@ void start_kernel(void)
     else
         uart_puts("1 so s mode next");
     unsigned long t=(unsigned long)&trap_handler;
+    uart_puts("\naddress of trap handler is : ");uart_hex(t);
     asm volatile("csrw stvec,%0"::"r"(t));
     unsigned long p;
-    //uart_puts("\np is ");uart_hex(p);uart_puts("\n");
+   // uart_puts("\np is ");uart_hex(p);uart_puts("\n");
     asm volatile("csrr %0,stvec":"=r"(p));
     uart_puts("\nstvec is ");uart_hex(p);uart_puts("\n");
     //unsigned long pm=(unsigned long)&process_main;
